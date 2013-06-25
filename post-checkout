@@ -53,3 +53,5 @@ end
 if (new_migrations + removed_migrations + updated_migrations === 0) && !seeds_changed
     puts "\e[00;32m" + "No database updates detected." + "\e[00m"
 end
+
+exit 0
