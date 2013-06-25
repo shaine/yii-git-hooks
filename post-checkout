@@ -1,0 +1,57 @@
+#!/usr/bin/env ruby
+
+def pluralize(n, singular, plural=nil)
+    if n == 1
+        "1 #{singular}"
+    elsif plural
+        "#{n} #{plural}"
+    else
+        "#{n} #{singular}s"
+    end
+end
+
+base_branch = ARGV[0]
+if ARGV[1]
+    topic_branch = ARGV[1]
+else
+    topic_branch = "HEAD"
+end
+
+seeds_changed = false
+new_migrations = 0
+removed_migrations = 0
+updated_migrations = 0
+migration_path = 'protected/data/migrations'
+seeds_path = 'protected/data/scripts/seeds.php'
+
+changed_files = `git diff --name-status #{base_branch} #{topic_branch}`
+changed_files.each_line do |line|
+    if line[0] === 'A' and line.include? migration_path
+        new_migrations += 1
+    elsif line[0] === 'M' and line.include? migration_path
+        updated_migrations += 1
+    elsif line[0] === 'D' and line.include? migration_path
+        removed_migrations += 1
+    elsif line.include? seeds_path
+        seeds_changed = true
+    end
+end
+
+if new_migrations > 0
+    puts "\e[00;31m" + pluralize(new_migrations, 'migration') + " added." + "\e[00m"
+end
+if updated_migrations > 0
+    puts "\e[00;31m" + pluralize(updated_migrations, 'migration') + " updated (this might cause problems)." + "\e[00m"
+end
+if removed_migrations > 0
+    puts "\e[00;33m" + pluralize(removed_migrations, 'migration') + " removed (did you remember to revert?)." + "\e[00m"
+end
+if seeds_changed
+    puts "\e[00;33m" + "Seeds file updated, make sure to re-seed your database." + "\e[00m"
+end
+
+if (new_migrations + removed_migrations + updated_migrations === 0) && !seeds_changed
+    puts "\e[00;32m" + "No database updates detected." + "\e[00m"
+end
+
+exit 1
